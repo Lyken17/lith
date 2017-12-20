@@ -1,5 +1,5 @@
 # lyth
-Lyken's extensions for PyTorch
+**Ly**ken's extensions for Py**T**orc**h**
 
 # TODO
 1. General flags
