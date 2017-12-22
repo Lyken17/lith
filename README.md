@@ -1,5 +1,5 @@
-# lyth
-**Ly**ken's extensions for Py**T**orc**h**
+# LITH
+**Li**geng's extensions for Py**T**orc**h**
 
 # TODO
 1. General Metrics
