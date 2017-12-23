@@ -18,7 +18,7 @@ class Meter(object):
 
 
 class AverageMeter(Meter):
-    def __abs__(self):
+    def __init__(self):
         super(AverageMeter, self).__init__()
         self.sum = 0.0
         self.n = 0
