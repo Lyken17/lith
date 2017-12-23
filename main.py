@@ -1,1 +1,1 @@
-from src import RuizhiMeter
+from lith import RuizhiMeter
