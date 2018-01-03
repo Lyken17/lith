@@ -12,4 +12,4 @@ formatter = logging.Formatter('%(message)s')
 console.setFormatter(formatter)
 logging.getLogger('').addHandler(console)
 
-logging.info("test")
+logging.info("test ")
