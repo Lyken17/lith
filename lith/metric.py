@@ -7,6 +7,10 @@ class Metric(object):
     def __init__(self):
         pass
 
+    @property
+    def name(self):
+        return self.__class__.__name__
+
     def torchlize(func):
         # preprocess the args from numpy into torch tensor
         def convert(*args, **kwargs):
@@ -29,6 +33,10 @@ class TopKAccuracy(Metric):
     def __init__(self, k):
         super(TopKAccuracy, self).__init__()
         self.k = k
+
+    @property
+    def name(self):
+        return "Top-%d-Accuracy" % self.k
 
     @Metric.torchlize
     def __call__(self, output, target):
