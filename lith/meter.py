@@ -8,13 +8,13 @@ class Meter(object):
         pass
 
     def reset(self):
-        pass
+        raise NotImplementedError
 
     def add(self, *args, **kwargs):
-        pass
+        raise NotImplementedError
 
     def value(self):
-        pass
+        raise NotImplementedError
 
 
 class AverageMeter(Meter):
@@ -25,6 +25,22 @@ class AverageMeter(Meter):
         self.var = 0.0
         self.mean = 0.0
         self.std = 0.0
+        self.reset()
+
+    def reset(self):
+        self.sum = 0.0
+        self.n = 0
+        self.var = 0.0
+        self.mean = 0.0
+        self.std = 0.0
+
+    def add(self, value):
+        self.sum += value
+        self.n += 1
+        self.mean = self.sum / self.n
+
+    def value(self):
+        return self.mean
 
 
 class SlidingWindowAverageMeter(Meter):
@@ -37,6 +53,7 @@ class SlidingWindowAverageMeter(Meter):
         self.var = 0.0
         self.mean = 0.0
         self.std = 0.0
+        self.reset()
 
     def reset(self):
         self.sum = 0.0
@@ -59,7 +76,9 @@ class SlidingWindowAverageMeter(Meter):
 class MovingAverageMeter(Meter):
     def __init__(self, momemtum=0.9):
         super(MovingAverageMeter, self).__init__()
+        self.num = 0.0
         self.momemtum = momemtum
+        self.reset()
 
     def reset(self):
         self.num = 0.0

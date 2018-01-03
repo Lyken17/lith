@@ -32,12 +32,17 @@ class TopKAccuracy(Metric):
 
     @Metric.torchlize
     def __call__(self, output, target):
+        """
+        :param output: *xC
+        :param target: *x1
+        :return:
+        """
         assert output.dim() == target.dim(), \
             '''To compute TopK, `output` must have same shape as `target` '''
         sorted, indices = torch.topk(output, self.k, output.dim() - 1)
         comp = indices - target
         correct = comp.eq(0).cpu().sum()
-        print(indices.size(), target.size(), correct, output.size(0))
+        # print(indices.size(), target.size(), correct, output.size(0))
         return correct / output.size(0)
 
 
@@ -49,7 +54,8 @@ class Accuracy(TopKAccuracy):
 class MeanSquareError(Metric):
     @Metric.torchlize
     def __call__(self, output, target):
-        assert output.dim() == target.dim(), "To compute MSE, output must have same dimension as target"
+        assert output.size() == target.size(), \
+            "To compute MSE, output must have same shape as target"
         return torch.mean((output - target) ** 2)
 
 
@@ -58,16 +64,18 @@ class IoU(Metric):
     def __call__(self, output, target):
         """
         :param output: NxCxHxW
-        :param target: Nx1xHxW
+        :param target: NxHxW
         :return:
         """
-        assert output.dim() == target.dim(), "To compute IoU, output must have same dimension as target"
+        assert output.dim() - 1 == target.dim() or output.dim() == target.dim(), \
+            '''To compute IoU, output must have one more or same dimension as target's,
+            e.g. output: NxCxHxW, target: NxHxW or output: NxCxHxW, target: Nx1xHxW'''
         pred = output.max(1)[1]
         channel = output.size(1)
         IoU_list = []
         for i in range(channel):
-            inter = (pred == i and target == i).cpu().sum()
-            union = (pred == i or target == i).cpu().sum()
+            inter = ((pred == i) & (target == i)).cpu().sum()
+            union = ((pred == i) | (target == i)).cpu().sum()
             IoU = inter / union
             IoU_list.append(IoU)
         return torch.Tensor(IoU_list)
@@ -100,19 +108,12 @@ class ConfusionMatrix(Metric):
         fusionMatrix = [_ for _ in range(channels)]
         pred = output.max(-1)[1]
         for i in range(channels):
-            tp = (pred == i and target == i).cpu().sum()
-            tn = (pred != i and target != i).cpu().sum()
-            fp = (pred == i and target != i).cpu().sum()
-            fn = (pred != i and target == i).cpu().sum()
+            tp = ((pred == i) & (target == i)).cpu().sum()
+            fp = ((pred == i) & (target != i)).cpu().sum()
+            fn = ((pred != i) & (target == i)).cpu().sum()
+            tn = ((pred != i) & (target != i)).cpu().sum()
             fusionMatrix[i] = torch.Tensor(
                 [[tp, fp],
                  [fn, tn]]
             )
         return fusionMatrix
-
-
-if __name__ == "__main__":
-    m = Accuracy()
-    a = np.random.random_sample([100, 100, 5])
-    b = np.random.randint(0, 5, [100, 100, 1])
-    print(m(a, b))
