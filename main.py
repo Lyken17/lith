@@ -1,18 +1,15 @@
-import torch
-import numpy as np
+import logging
 
-from lith import metric
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(levelname)s: %(message)s',
+                    datefmt='%b/%d[%H:%M:%S]',
+                    filename='myapp.log',
+                    filemode='w')
 
-m = metric.MeanIoU()
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+formatter = logging.Formatter('%(message)s')
+console.setFormatter(formatter)
+logging.getLogger('').addHandler(console)
 
-output = torch.randn([10, 3, 32, 32])
-noise = torch.randn([10, 3, 32, 32]) / 5
-
-target = torch.randn([10, 1, 32, 32])
-pred = (output + noise).max(1)[1]
-# pred = pred.view(pred.size(0), 1, pred.size(1), pred.size(2))
-
-# print(pred.size())
-# print(m(output, pred))
-
-print(m.name)
+logging.info("test")

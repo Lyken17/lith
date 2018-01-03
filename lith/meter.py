@@ -90,3 +90,11 @@ class MovingAverageMeter(Meter):
 
     def value(self):
         return self.num
+
+
+class SpeedMeter(Meter):
+    def __init__(self, batch_size):
+        super(SpeedMeter, self).__init__()
+
+    def __call__(self):
+        pass

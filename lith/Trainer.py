@@ -1,4 +1,5 @@
 import os.path as osp
+import logging
 from collections import OrderedDict
 
 import torch
@@ -87,13 +88,14 @@ class Trainer(object):
     def __init__(self, model, train_loader, valid_loader,
                  start_epoch=0, total_epoch=150,
                  criterion=nn.CrossEntropyLoss(), eval_criterion=Compose(Accuracy()),
-                 scheduler=None, root="."):
+                 scheduler=None, root=".", name="base"):
         # init variables
         self.epoch = start_epoch
 
         # environment
         self.use_cuda = 0
         self.root = root
+        self.name = name
         self.train_loader = train_loader
         self.valid_loader = valid_loader
         self.criterion = criterion
@@ -113,6 +115,20 @@ class Trainer(object):
             self.scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=self.optimizer,
                 milestones=[int(self.total_epochs * 0.5), int(self.total_epochs * 0.75)], gamma=0.1)
 
+        # other variables
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s %(levelname)s: %(message)s',
+                            datefmt='%b/%d[%H:%M:%S]',
+                            filename=osp.join(self.root, '%s.log' % self.name),
+                            filemode='w')
+
+        console = logging.StreamHandler()
+        console.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(message)s')
+        console.setFormatter(formatter)
+        logging.getLogger('').addHandler(console)
+        self.logger = logging.info
+
     def run(self):
         while self.epoch <= self.total_epochs:
             self.scheduler.step(self.epoch)
@@ -121,14 +137,23 @@ class Trainer(object):
             self.snapshot()
             self.epoch += 1
 
-    def logging(self, epoch, progress, output, target):
-        acc = self.eval_criterion(output, target)
-
+    def log_info(self, type, epoch, progress, output, target):
+        msg = "%s: %d [%d/%d]" % (type, epoch, progress[0], progress[1])
+        evaluation = self.eval_criterion(output, target)
+        length = len(msg)
+        for key, value in evaluation.items():
+            current = "{}: {}".format(key, value)
+            length += len(current)
+            if length > 80:
+                msg += "\n"
+                length = len(current)
+            msg += current
 
     # train one epoch
     def train(self, train_loader, optimizer, epoch):
         self.model.train()
         n_samples = len(train_loader.dataset)
+        n_batchs = len(train_loader)
         for batch_idx, (input, target) in train_loader:
             if self.use_cuda:
                 input, target = input.cuda(), target.cuda()
@@ -167,7 +192,6 @@ class Trainer(object):
             output = self.model(input)
             loss = self.criterion(output, target)
 
-
     def serialize(self):
         raise NotImplementedError
 
@@ -180,6 +204,7 @@ class Trainer(object):
                 "error": error,
                 "epoch": self.epoch
             }, osp.join(self.root, "model-best.t7"))
+
         torch.save({
             "model": self.model,
             "optimizer": self.optimizer,
