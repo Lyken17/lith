@@ -1,4 +1,7 @@
 import math
+
+from collections import OrderedDict
+
 import numpy as np
 import torch
 
@@ -125,3 +128,18 @@ class ConfusionMatrix(Metric):
                  [fn, tn]]
             )
         return fusionMatrix
+
+
+class Compose(Metric):
+    def __init__(self, metrics):
+        super(Compose, self).__init__()
+        if not isinstance(metrics, list):
+            self.metrics = metrics
+
+    def __call__(self, output, target):
+        result = OrderedDict()
+        for m in self.metrics:
+            key = m.name
+            value = m(output, target)
+            result[key] = value
+        return result
