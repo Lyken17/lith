@@ -96,9 +96,14 @@ class Trainer(object):
         self.use_cuda = 0
         self.root = root
         self.name = name
+
+        # dataset
         self.train_loader = train_loader
         self.valid_loader = valid_loader
+
+        # training
         self.criterion = criterion
+        self.eval_criterion = eval_criterion
 
         # init by assignment
         self.model = model
@@ -107,7 +112,6 @@ class Trainer(object):
         self.total_epochs = total_epoch
 
         self.criterion = criterion
-        self.eval_criterion = 1
 
         # fb.resnet.torch scheduler for CIFAR
         self.scheduler = scheduler
@@ -137,17 +141,21 @@ class Trainer(object):
             self.snapshot()
             self.epoch += 1
 
-    def log_info(self, type, epoch, progress, output, target):
+    def log_info(self, type, epoch, progress, output, target, loss=None):
         msg = "%s: %d [%d/%d]" % (type, epoch, progress[0], progress[1])
-        evaluation = self.eval_criterion(output, target)
+        if loss is not None:
+            msg += "{}: {}".format("Loss", loss.data.cpu())
         length = len(msg)
+
+        evaluation = self.eval_criterion(output, target)
         for key, value in evaluation.items():
             current = "{}: {}".format(key, value)
             length += len(current)
             if length > 80:
-                msg += "\n"
-                length = len(current)
+                self.logger(msg)
+                msg = ""
             msg += current
+            length = len(msg)
 
     # train one epoch
     def train(self, train_loader, optimizer, epoch):
@@ -165,12 +173,13 @@ class Trainer(object):
             loss.backward()
             optimizer.step()
             # evaluation
-
+            self.log_info("train", epoch, [batch_idx, n_batchs], output, target, loss)
             # log information
 
     def valid(self, valid_loader , epoch):
         self.model.eval()
         n_samples = len(valid_loader.dataset)
+        n_batchs = len(valid_loader)
         for batch_idx, (input, target) in valid_loader:
             if self.use_cuda:
                 input, target = input.cuda(), target.cuda()
@@ -178,7 +187,7 @@ class Trainer(object):
             output = self.model(input)
             loss = self.criterion(output, target)
             # evaluation
-
+            self.log_info("valid", epoch, [batch_idx, n_batchs], output, target)
             # log information
         return
 
