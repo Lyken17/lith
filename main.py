@@ -69,5 +69,5 @@ class Model(nn.Module):
 model = Model()
 optim = torch.optim.SGD(model.parameters(), lr=0.1, weight_decay=1e-4, momentum=0.9)
 
-trainer = Trainer(model, train_loader, valid_loader, optim)
+trainer = Trainer(model, train_loader, valid_loader, optim, resume=True)
 trainer.run()
