@@ -74,10 +74,10 @@ class SlidingWindowAverageMeter(Meter):
 
 
 class MovingAverageMeter(Meter):
-    def __init__(self, momemtum=0.9):
+    def __init__(self, momentum=0.9):
         super(MovingAverageMeter, self).__init__()
         self.num = 0.0
-        self.momemtum = momemtum
+        self.momentum = momentum
         self.reset()
 
     def reset(self):
@@ -85,8 +85,8 @@ class MovingAverageMeter(Meter):
 
     def add(self, value):
         old_value = self.num
-        self.num = (1 - self.momemtum) * value \
-                   + self.momemtum * old_value
+        self.num = (1 - self.momentum) * value \
+                   + self.momentum * old_value
 
     def value(self):
         return self.num
