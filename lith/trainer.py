@@ -1,4 +1,4 @@
-import os.path as osp
+import os, os.path as osp, shutil
 import logging
 import collections
 from collections import OrderedDict
@@ -20,22 +20,25 @@ class Trainer(object):
     def __init__(self, model, train_loader, valid_loader, optimizer,
                  start_epoch=0, total_epoch=150,
                  criterion=nn.CrossEntropyLoss(), eval_criterion=Compose(Error()),
-                 scheduler=None, root=".", name="base"):
-        # init variables
-        self.epoch = start_epoch
-
-        # environment
-        self.use_cuda = 0
-        self.root = root
-        self.name = name
-
+                 scheduler=None, root=".", name="base", resume=False):
         # dataset
         self.train_loader = train_loader
         self.valid_loader = valid_loader
-
-        # training
         self.criterion = criterion
         self.eval_criterion = eval_criterion
+
+        # environment
+        self.use_cuda = 0
+        self.resume = resume
+        self.root = root
+        self.name = name
+        self.dir = osp.join(self.root, self.name)
+        if osp.exists(self.dir) and not self.resume:
+            shutil.rmtree(self.dir)
+        os.makedirs(self.dir, exist_ok=True)
+
+        # init variables
+        self.epoch = start_epoch
 
         # init by assignment
         self.model = model
@@ -43,8 +46,15 @@ class Trainer(object):
         self.epoch = self.start_epoch = start_epoch
         self.total_epochs = total_epoch
         self.best_error = 100
+        self.write_mode = "w+"
 
-        self.criterion = criterion
+        if osp.exists(self.dir) and self.resume:
+            archived = torch.load(osp.join(self.dir, "model-latest.pth"))
+            self.model.load_state_dict(archived["model"])
+            self.optimizer.load_state_dict(archived["optimizer"])
+            self.best_error = archived["error"]
+            self.epoch = self.start_epoch = archived["epoch"]
+            self.write_mode = "a+"
 
         # fb.resnet.torch scheduler for CIFAR
         self.scheduler = scheduler
@@ -60,8 +70,8 @@ class Trainer(object):
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s %(levelname)s: %(message)s',
                             datefmt='%b/%d[%H:%M:%S]',
-                            filename=osp.join(self.root, '%s.log' % self.name),
-                            filemode='w')
+                            filename=osp.join(self.dir, 'log.txt'),
+                            filemode=self.write_mode)
 
         console = logging.StreamHandler()
         console.setLevel(logging.INFO)
@@ -79,7 +89,7 @@ class Trainer(object):
             self.epoch += 1
 
     def log_info(self, type, epoch, progress, output, target, loss=None):
-        msg = "%s: %d [%d/%d](%.2f) " % (type, epoch, progress[0], progress[1], progress[0] / progress[1] * 100)
+        msg = "%s: %d [%d/%d](%.2f%%)\t" % (type, epoch, progress[0], progress[1], progress[0] / progress[1] * 100)
         if loss is not None:
             msg += "{}: {:.4f}\t".format("Loss", loss.data.cpu()[0])
         length = len(msg)
@@ -88,7 +98,7 @@ class Trainer(object):
         for key, value in evaluation.items():
             current = "{}: {:.4f}\t".format(key, value)
             length += len(current)
-            if length > 80:
+            if length > 120:
                 self.logger(msg)
                 msg = ""
             msg += current
@@ -157,20 +167,20 @@ class Trainer(object):
         if is_best:
             self.best_error = error
             torch.save({
-                "model": self.model,
-                "optimizer": self.optimizer,
+                "model": self.model.state_dict(),
+                "optimizer": self.optimizer.state_dict(),
                 "best": is_best,
                 "error": error,
                 "epoch": self.epoch
-            }, osp.join(self.root, self.name, "model-best.t7"))
+            }, osp.join(self.root, self.name, "model-best.pth"))
 
         torch.save({
-            "model": self.model,
-            "optimizer": self.optimizer,
+            "model": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
             "best": is_best,
             "error": error,
             "epoch": self.epoch
-        }, osp.join(self.root, self.name, "model-latest.t7"))
+        }, osp.join(self.root, self.name, "model-latest.pth"))
 
-    def resume(self):
+    def load_state_dict(self):
         pass
