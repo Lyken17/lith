@@ -20,7 +20,7 @@ class Trainer(object):
     def __init__(self, model, train_loader, valid_loader, optimizer,
                  start_epoch=0, total_epoch=150,
                  criterion=nn.CrossEntropyLoss(), eval_criterion=Compose(Error()),
-                 scheduler=None, root=".", name="base", resume=False):
+                 scheduler=None, use_cuda=False, root=".", name="base", resume=False):
         # dataset
         self.train_loader = train_loader
         self.valid_loader = valid_loader
@@ -28,7 +28,7 @@ class Trainer(object):
         self.eval_criterion = eval_criterion
 
         # environment
-        self.use_cuda = 0
+        self.use_cuda = use_cuda
         self.resume = resume
         self.root = root
         self.name = name
@@ -80,7 +80,12 @@ class Trainer(object):
         logging.getLogger('').addHandler(console)
         self.logger = logging.info
 
-    def run(self):
+    def run(self, start_epoch=None, total_epochs=None):
+        if start_epoch is not None:
+            self.epoch = start_epoch
+        if total_epochs is not None:
+            self.total_epochs = total_epochs
+
         while self.epoch <= self.total_epochs:
             self.scheduler.step(self.epoch)
             self.train(self.train_loader, self.optimizer, self.epoch)
