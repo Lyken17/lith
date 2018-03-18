@@ -21,6 +21,8 @@ class _Loss(Module):
         self.size_average = size_average
         self.reduce = reduce
 
+    def forward(self, *input):
+        raise NotImplementedError("loss.forward() must be overrided.")
 
 class _WeightedLoss(_Loss):
     def __init__(self, weight=None, size_average=True, reduce=True):
