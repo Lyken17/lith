@@ -13,7 +13,7 @@ import math
 import numpy as np
 import torch
 
-from .metric import Compose, Accuracy, Error
+from lith.metric import Compose, Accuracy, Error
 
 
 class Trainer(object):
