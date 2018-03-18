@@ -1,17 +1,12 @@
 import os.path as osp
-from collections import OrderedDict
 
-import torch
 import torch.nn as nn
 import torch.optim
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
-
-import torchvision
 from torchvision import datasets
 from torchvision import transforms
 
-from lith.trainer import Trainer
+from lith.trainers.classification import Trainer
 
 root = osp.expanduser("~/torch_data")
 normMean = [0.49139968, 0.48215827, 0.44653124]
